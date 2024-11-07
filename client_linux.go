@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/binary"
+	"log"
 	"net"
 	"os"
 	"time"
@@ -195,6 +196,25 @@ func (c *client) StationInfo(ifi *Interface) ([]*StationInfo, error) {
 	return stations, nil
 }
 
+func (c *client) StationInfoSingle(ifi *Interface, stationMac net.HardwareAddr) (*StationInfo, error) {
+	msgs, err := c.get(
+		unix.NL80211_CMD_GET_STATION,
+		0,
+		ifi,
+		func(ae *netlink.AttributeEncoder) {
+			ae.Bytes(unix.NL80211_ATTR_MAC, stationMac)
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	if len(msgs) != 1 {
+		log.Printf("expected 1 message, got %d\n", len(msgs))
+	}
+
+	return parseStationInfo(msgs[0].Data)
+}
+
 // SurveyInfo requests that nl80211 return a list of survey information for the
 // specified Interface.
 func (c *client) SurveyInfo(ifi *Interface) ([]*SurveyInfo, error) {
@@ -294,7 +314,7 @@ func parseInterfaces(msgs []genetlink.Message) ([]*Interface, error) {
 		}
 
 		var ifi Interface
-		if err := (&ifi).parseAttributes(attrs); err != nil {
+		if err := (&ifi).ParseAttributes(attrs); err != nil {
 			return nil, err
 		}
 
@@ -330,8 +350,8 @@ func (ifi *Interface) idAttrs() []netlink.Attribute {
 	}
 }
 
-// parseAttributes parses netlink attributes into an Interface's fields.
-func (ifi *Interface) parseAttributes(attrs []netlink.Attribute) error {
+// ParseAttributes parses netlink attributes into an Interface's fields.
+func (ifi *Interface) ParseAttributes(attrs []netlink.Attribute) error {
 	for _, a := range attrs {
 		switch a.Type {
 		case unix.NL80211_ATTR_IFINDEX:
@@ -381,7 +401,7 @@ func parseBSS(msgs []genetlink.Message) (*BSS, error) {
 			}
 
 			var bss BSS
-			if err := (&bss).parseAttributes(nattrs); err != nil {
+			if err := (&bss).ParseAttributes(nattrs); err != nil {
 				return nil, err
 			}
 
@@ -392,8 +412,8 @@ func parseBSS(msgs []genetlink.Message) (*BSS, error) {
 	return nil, os.ErrNotExist
 }
 
-// parseAttributes parses netlink attributes into a BSS's fields.
-func (b *BSS) parseAttributes(attrs []netlink.Attribute) error {
+// ParseAttributes parses netlink attributes into a BSS's fields.
+func (b *BSS) ParseAttributes(attrs []netlink.Attribute) error {
 	for _, a := range attrs {
 		switch a.Type {
 		case unix.NL80211_BSS_BSSID:
@@ -455,7 +475,7 @@ func parseStationInfo(b []byte) (*StationInfo, error) {
 				return nil, err
 			}
 
-			if err := (&info).parseAttributes(nattrs); err != nil {
+			if err := (&info).ParseAttributes(nattrs); err != nil {
 				return nil, err
 			}
 
@@ -468,8 +488,8 @@ func parseStationInfo(b []byte) (*StationInfo, error) {
 	return nil, os.ErrNotExist
 }
 
-// parseAttributes parses netlink attributes into a StationInfo's fields.
-func (info *StationInfo) parseAttributes(attrs []netlink.Attribute) error {
+// ParseAttributes parses netlink attributes into a StationInfo's fields.
+func (info *StationInfo) ParseAttributes(attrs []netlink.Attribute) error {
 	for _, a := range attrs {
 		switch a.Type {
 		case unix.NL80211_STA_INFO_CONNECTED_TIME:
@@ -582,7 +602,7 @@ func parseSurveyInfo(b []byte) (*SurveyInfo, error) {
 				return nil, err
 			}
 
-			if err := (&info).parseAttributes(nattrs); err != nil {
+			if err := (&info).ParseAttributes(nattrs); err != nil {
 				return nil, err
 			}
 
@@ -595,8 +615,8 @@ func parseSurveyInfo(b []byte) (*SurveyInfo, error) {
 	return nil, os.ErrNotExist
 }
 
-// parseAttributes parses netlink attributes into a SurveyInfo's fields.
-func (s *SurveyInfo) parseAttributes(attrs []netlink.Attribute) error {
+// ParseAttributes parses netlink attributes into a SurveyInfo's fields.
+func (s *SurveyInfo) ParseAttributes(attrs []netlink.Attribute) error {
 	for _, a := range attrs {
 		switch a.Type {
 		case unix.NL80211_SURVEY_INFO_FREQUENCY:

@@ -1,6 +1,7 @@
 package wifi
 
 import (
+	"net"
 	"time"
 )
 
@@ -58,6 +59,10 @@ func (c *Client) BSS(ifi *Interface) (*BSS, error) {
 // of an error.
 func (c *Client) StationInfo(ifi *Interface) ([]*StationInfo, error) {
 	return c.c.StationInfo(ifi)
+}
+
+func (c *Client) StationInfoSingle(ifi *Interface, station net.HardwareAddr) (*StationInfo, error) {
+	return c.c.StationInfoSingle(ifi, station)
 }
 
 // SurveyInfo retrieves the survey information about a WiFi interface.
