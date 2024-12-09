@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/binary"
+	"fmt"
 	"net"
 	"os"
 	"time"
@@ -175,11 +176,7 @@ func (c *client) StationInfo(ifi *Interface) ([]*StationInfo, error) {
 		unix.NL80211_CMD_GET_STATION,
 		netlink.Dump,
 		ifi,
-		func(ae *netlink.AttributeEncoder) {
-			if ifi.HardwareAddr != nil {
-				ae.Bytes(unix.NL80211_ATTR_MAC, ifi.HardwareAddr)
-			}
-		},
+		nil,
 	)
 	if err != nil {
 		return nil, err
@@ -193,6 +190,25 @@ func (c *client) StationInfo(ifi *Interface) ([]*StationInfo, error) {
 	}
 
 	return stations, nil
+}
+
+func (c *client) StationInfoSingle(ifi *Interface, stationMac net.HardwareAddr) (*StationInfo, error) {
+	msgs, err := c.get(
+		unix.NL80211_CMD_GET_STATION,
+		0,
+		ifi,
+		func(ae *netlink.AttributeEncoder) {
+			ae.Bytes(unix.NL80211_ATTR_MAC, stationMac)
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	if len(msgs) != 1 {
+		return nil, fmt.Errorf("unexpected number of messages: %d", len(msgs))
+	}
+
+	return parseStationInfo(msgs[0].Data)
 }
 
 // SurveyInfo requests that nl80211 return a list of survey information for the
