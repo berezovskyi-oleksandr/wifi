@@ -199,7 +199,7 @@ func (c *client) StationInfo(ifi *Interface) ([]*StationInfo, error) {
 
 	stations := make([]*StationInfo, len(msgs))
 	for i := range msgs {
-		if stations[i], err = parseStationInfo(msgs[i].Data); err != nil {
+		if stations[i], err = ParseStationInfo(msgs[i].Data); err != nil {
 			return nil, err
 		}
 	}
@@ -448,9 +448,9 @@ func (b *BSS) parseAttributes(attrs []netlink.Attribute) error {
 	return nil
 }
 
-// parseStationInfo parses StationInfo attributes from a byte slice of
+// ParseStationInfo parses StationInfo attributes from a byte slice of
 // netlink attributes.
-func parseStationInfo(b []byte) (*StationInfo, error) {
+func ParseStationInfo(b []byte) (*StationInfo, error) {
 	attrs, err := netlink.UnmarshalAttributes(b)
 	if err != nil {
 		return nil, err
@@ -459,6 +459,8 @@ func parseStationInfo(b []byte) (*StationInfo, error) {
 	var info StationInfo
 	for _, a := range attrs {
 		switch a.Type {
+		case unix.NL80211_ATTR_IFINDEX:
+			info.InterfaceIndex = nlenc.Uint32(a.Data)
 		case unix.NL80211_ATTR_MAC:
 			info.HardwareAddr = net.HardwareAddr(a.Data)
 		case unix.NL80211_ATTR_STA_INFO:

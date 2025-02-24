@@ -129,6 +129,9 @@ type Interface struct {
 // StationInfo contains statistics about a WiFi interface operating in
 // station mode.
 type StationInfo struct {
+	// The interface that this station is associated with.
+	InterfaceIndex uint32
+
 	// The hardware address of the station.
 	HardwareAddr net.HardwareAddr
 

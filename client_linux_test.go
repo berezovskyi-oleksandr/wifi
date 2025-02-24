@@ -271,6 +271,7 @@ func TestLinux_clientStationInfoNoMessagesIsNotExist(t *testing.T) {
 func TestLinux_clientStationInfoOK(t *testing.T) {
 	want := []*StationInfo{
 		{
+			InterfaceIndex:     1,
 			HardwareAddr:       net.HardwareAddr{0xb8, 0x27, 0xeb, 0xd5, 0xf3, 0xef},
 			Connected:          30 * time.Minute,
 			Inactive:           4 * time.Millisecond,
@@ -287,6 +288,7 @@ func TestLinux_clientStationInfoOK(t *testing.T) {
 			TransmitBitrate:    130000000,
 		},
 		{
+			InterfaceIndex:     1,
 			HardwareAddr:       net.HardwareAddr{0x40, 0xa5, 0xef, 0xd9, 0x96, 0x6f},
 			Connected:          60 * time.Minute,
 			Inactive:           8 * time.Millisecond,
@@ -487,6 +489,10 @@ func (s *StationInfo) attributes() []netlink.Attribute {
 		{
 			Type: unix.NL80211_ATTR_MAC,
 			Data: s.HardwareAddr,
+		},
+		{
+			Type: unix.NL80211_ATTR_IFINDEX,
+			Data: nlenc.Uint32Bytes(s.InterfaceIndex),
 		},
 		{
 			Type: unix.NL80211_ATTR_STA_INFO,
